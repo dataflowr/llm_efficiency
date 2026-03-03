@@ -7,44 +7,17 @@ During the [practical](practicals/KV_cache_empty.ipynb), we started to adapt the
 ## Background
 
 Using [Named Tensor Notation](https://hackmd.io/@mlelarge/HkVlvrc8j), we write (see the paper by [Chiang, Rush and Barak](https://arxiv.org/abs/2102.13196))
-\begin{align*}
-\newcommand{\namedtensorstrut}{\vphantom{fg}}
-\newcommand{\nfun}[2]{\mathop{\underset{\substack{#1}}{\namedtensorstrut\mathrm{#2}}}}
-\newcommand{\name}[1]{\mathsf{\namedtensorstrut #1}}
-\newcommand{\ndef}[2]{\newcommand{#1}{\name{#2}}}
-\ndef{\ax}{ax}
-\ndef{\bx}{bx}
-\newcommand{\reals}{\mathbb{R}}
-\ndef{\batch}{batch}
-\ndef{\layer}{layer}
-\ndef{\chans}{chans}
-\ndef{\key}{key}
-\ndef{\seq}{seq}
-\ndef{\val}{val}
-\ndef{\heads}{heads}
-\ndef{\hidden}{hidden}
-\ndef{\height}{height}
-\ndef{\width}{width}
-\newcommand{\nbin}[2]{\mathbin{\underset{\substack{#1}}{\namedtensorstrut #2}}}
-\newcommand{\ndot}[1]{\nbin{#1}{\odot}}
-\text{Attention} \colon \mathbb{R}^{\key} \times \mathbb{R}^{\seq \times\key} \times \mathbb{R}^{\seq \times\val} &\rightarrow \mathbb{R}^{\val} \\
-  \text{Attention}(Q,K,V) &= \left( \nfun{\seq}{softmax} \frac{Q \ndot{\key} K}{\sqrt{|\key|}} \right) \ndot{\seq} V.
-\end{align*}
+
+$$\text{Attention} \colon \mathbb{R}^{\mathsf{key}} \times \mathbb{R}^{\mathsf{seq} \times \mathsf{key}} \times \mathbb{R}^{\mathsf{seq} \times \mathsf{val}} \rightarrow \mathbb{R}^{\mathsf{val}}$$
+
+$$\text{Attention}(Q,K,V) = \left( \underset{\mathsf{seq}}{\mathrm{softmax}} \frac{Q \underset{\mathsf{key}}{\odot} K}{\sqrt{|\mathsf{key}|}} \right) \underset{\mathsf{seq}}{\odot} V$$
 
 During inference, when we compute the attention for the $t$-th token of a sequence, we get:
-\begin{align*}
-\newcommand{\namedtensorstrut}{\vphantom{fg}}
-\newcommand{\nfun}[2]{\mathop{\underset{\substack{#1}}{\namedtensorstrut\mathrm{#2}}}}
-\newcommand{\name}[1]{\mathsf{\namedtensorstrut #1}}
-\newcommand{\ndef}[2]{\newcommand{#1}{\name{#2}}}
-\ndef{\key}{key}
-\ndef{\seq}{seq}
-\ndef{\val}{val}
-\newcommand{\nbin}[2]{\mathbin{\underset{\substack{#1}}{\namedtensorstrut #2}}}
-\newcommand{\ndot}[1]{\nbin{#1}{\odot}}
-\text{Attention} \colon \mathbb{R}^{\key} \times \mathbb{R}^{\seq(t-b:t) \times\key} \times \mathbb{R}^{\seq(t-b:t) \times\val} &\rightarrow \mathbb{R}^{\val} \\
-  \text{Attention}(Q_t,K_t,V_t) &= \left( \nfun{\seq}{softmax} \frac{Q_t \ndot{\key} K_t}{\sqrt{|\key|}} \right) \ndot{\seq} V_t,
-\end{align*}
+
+$$\text{Attention} \colon \mathbb{R}^{\mathsf{key}} \times \mathbb{R}^{\mathsf{seq}(t-b:t) \times \mathsf{key}} \times \mathbb{R}^{\mathsf{seq}(t-b:t) \times \mathsf{val}} \rightarrow \mathbb{R}^{\mathsf{val}}$$
+
+$$\text{Attention}(Q_t,K_t,V_t) = \left( \underset{\mathsf{seq}}{\mathrm{softmax}} \frac{Q_t \underset{\mathsf{key}}{\odot} K_t}{\sqrt{|\mathsf{key}|}} \right) \underset{\mathsf{seq}}{\odot} V_t$$
+
 where $b$ is the size of a block and $t-b$ should be interpreted as $\max(t-b,0)$.
 
 For the computation at time $t+1$, we see that the attention score depends on keys and values for all indices in $\mathsf{seq}(t-b+1:t+1)$. Since the keys and values for indices $\mathsf{seq}(t-b+1:t)$ were already computed at previous steps, we only need to compute the key and value for the new token at position $t+1$. This is exactly what the KV cache does!
